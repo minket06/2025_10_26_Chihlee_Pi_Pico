@@ -66,6 +66,102 @@ uv run streamlit run app.py
 - 溫度: `home/living_room/temperature`
 - 濕度: `home/living_room/humidity`
 
+## Pico 端發送格式說明
+
+若您使用 Raspberry Pi Pico (MicroPython) 作為感測器裝置，請依照以下格式發送 MQTT 訊息：
+
+### 1. Topic 與 Payload 格式
+
+| 監控項目 | Topic (主題) | Payload (JSON 格式) | 範例 |
+| :--- | :--- | :--- | :--- |
+| **溫度** | `home/living_room/temperature` | `{"value": <數值>}` | `{"value": 25.5}` |
+| **濕度** | `home/living_room/humidity` | `{"value": <數值>}` | `{"value": 60.2}` |
+| **電燈** | `home/living_room/light` | `{"status": "<狀態>"}` | `{"status": "ON"}` |
+
+### 2. Pico MicroPython 範例程式
+
+請將以下程式碼儲存為 `main.py` 並上傳至您的 Raspberry Pi Pico W：
+
+```python
+import network
+import time
+import json
+from umqtt.simple import MQTTClient
+from machine import Pin
+import random # 僅用於模擬數據，實際使用請移除
+
+# --- 設定區 ---
+WIFI_SSID = "您的WiFi名稱"
+WIFI_PASSWORD = "您的WiFi密碼"
+MQTT_BROKER = "192.168.X.X"  # 請改為 Raspberry Pi 的 IP
+CLIENT_ID = "pico_sensor_01"
+
+# --- 連接 Wi-Fi ---
+def connect_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    if not wlan.isconnected():
+        print('正在連接 Wi-Fi...')
+        wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+        while not wlan.isconnected():
+            time.sleep(1)
+            print('.', end='')
+    print('\nWi-Fi 已連線! IP:', wlan.ifconfig()[0])
+
+# --- 連接 MQTT ---
+def connect_mqtt():
+    try:
+        client = MQTTClient(CLIENT_ID, MQTT_BROKER)
+        client.connect()
+        print('MQTT Broker 已連線!')
+        return client
+    except Exception as e:
+        print('MQTT 連線失敗:', e)
+        return None
+
+# --- 主程式 ---
+def main():
+    connect_wifi()
+    client = connect_mqtt()
+    
+    while True:
+        if client:
+            try:
+                # 1. 模擬溫度數據 (實際請讀取 DHT11/DHT22)
+                temp = 20 + random.randint(0, 10) + random.random()
+                temp_payload = json.dumps({"value": round(temp, 1)})
+                client.publish("home/living_room/temperature", temp_payload)
+                print(f"發送溫度: {temp_payload}")
+
+                # 2. 模擬濕度數據
+                humid = 50 + random.randint(0, 20) + random.random()
+                humid_payload = json.dumps({"value": round(humid, 1)})
+                client.publish("home/living_room/humidity", humid_payload)
+                print(f"發送濕度: {humid_payload}")
+
+                # 3. 模擬電燈狀態 (隨機切換)
+                status = "ON" if random.choice([True, False]) else "OFF"
+                light_payload = json.dumps({"status": status})
+                client.publish("home/living_room/light", light_payload)
+                print(f"發送電燈: {light_payload}")
+
+            except Exception as e:
+                print("發送錯誤:", e)
+                # 斷線重連機制
+                try:
+                    client.connect()
+                except:
+                    pass
+        else:
+            print("嘗試重新連接 MQTT...")
+            client = connect_mqtt()
+            
+        time.sleep(5) # 每 5 秒發送一次
+
+if __name__ == "__main__":
+    main()
+```
+
 ## 資料儲存
 
 資料會儲存在 `lesson 6` 目錄下，檔名格式為 `sensor_data_YYYYMMDD.xlsx`。
