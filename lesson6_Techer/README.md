@@ -29,6 +29,8 @@ cd /home/pi/Documents/GitHub/2025_10_26_chihlee_pi_pico/lesson6
 ./start.sh
 ```
 
+bash strat.sh
+
 ### 方式 2：手動啟動
 
 ```bash
