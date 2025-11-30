@@ -66,6 +66,52 @@ uv run streamlit run app.py
 - 溫度: `home/living_room/temperature`
 - 濕度: `home/living_room/humidity`
 
+## Pico 端發送格式說明
+
+若您使用 Raspberry Pi Pico (MicroPython) 作為感測器裝置，請依照以下格式發送 MQTT 訊息：
+
+### 1. Topic 與 Payload 格式
+
+| 監控項目 | Topic (主題) | Payload (JSON 格式) | 範例 |
+| :--- | :--- | :--- | :--- |
+| **溫度** | `home/living_room/temperature` | `{"value": <數值>}` | `{"value": 25.5}` |
+| **濕度** | `home/living_room/humidity` | `{"value": <數值>}` | `{"value": 60.2}` |
+| **電燈** | `home/living_room/light` | `{"status": "<狀態>"}` | `{"status": "ON"}` |
+
+### 2. Pico MicroPython 範例程式
+
+```python
+import network
+import time
+import json
+from umqtt.simple import MQTTClient
+
+# MQTT 設定 (請修改為您的 Broker IP)
+MQTT_BROKER = "192.168.X.X"
+CLIENT_ID = "pico_sensor_01"
+
+def connect_mqtt():
+    client = MQTTClient(CLIENT_ID, MQTT_BROKER)
+    client.connect()
+    return client
+
+# 發送資料範例
+def publish_data(client):
+    # 發送溫度
+    temp_data = json.dumps({"value": 26.5})
+    client.publish("home/living_room/temperature", temp_data)
+    
+    # 發送濕度
+    humid_data = json.dumps({"value": 70.0})
+    client.publish("home/living_room/humidity", humid_data)
+    
+    # 發送電燈狀態
+    light_data = json.dumps({"status": "ON"})
+    client.publish("home/living_room/light", light_data)
+
+# 主程式邏輯...
+```
+
 ## 資料儲存
 
 資料會儲存在 `lesson 6` 目錄下，檔名格式為 `sensor_data_YYYYMMDD.xlsx`。
