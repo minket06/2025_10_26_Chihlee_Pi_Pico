@@ -91,17 +91,23 @@ st.markdown("""
 
 # 全域變數用於跨執行緒通訊
 import queue
-data_queue = queue.Queue()
+
+@st.cache_resource
+def get_data_queue():
+    """取得跨執行緒的資料佇列 (全域唯一)"""
+    return queue.Queue()
 
 def on_mqtt_data_received(data):
     """MQTT 資料接收回調函數 (在背景執行緒運行)"""
-    # 將資料放入佇列，讓主執行緒處理
-    data_queue.put(data)
+    # 將資料放入全域佇列
+    q = get_data_queue()
+    q.put(data)
 
 def process_mqtt_data():
     """處理佇列中的 MQTT 資料 (在主執行緒運行)"""
-    while not data_queue.empty():
-        data = data_queue.get()
+    q = get_data_queue()
+    while not q.empty():
+        data = q.get()
         
         # 更新 session state
         st.session_state.sensor_data = data
@@ -129,20 +135,23 @@ def process_mqtt_data():
 
 def init_mqtt_connection():
     """初始化 MQTT 連線"""
+    # 1. 如果物件還沒建立，就建立一個
     if st.session_state.mqtt_subscriber is None:
         subscriber = MQTTSubscriber()
-        # 先暫時設定 callback，稍後會更新
         subscriber.set_callback(on_mqtt_data_received)
-        
-        if subscriber.connect():
-            st.session_state.mqtt_subscriber = subscriber
+        st.session_state.mqtt_subscriber = subscriber
+
+    # 2. 檢查連線狀態，如果沒連線就嘗試連接
+    if not st.session_state.mqtt_subscriber.is_connected():
+        print("🔄 偵測到未連線，嘗試連接 MQTT Broker...")
+        if st.session_state.mqtt_subscriber.connect():
+            print("✅ 重連成功！")
         else:
+            print("❌ 重連失敗")
             return False
     
-    # 關鍵修正：每次 Rerun 都必須更新 callback
-    # 這樣才能確保 callback 引用的是本次執行建立的 data_queue
-    if st.session_state.mqtt_subscriber:
-        st.session_state.mqtt_subscriber.set_callback(on_mqtt_data_received)
+    # 3. 每次 Rerun 都更新 callback，確保資料流向正確的 queue
+    st.session_state.mqtt_subscriber.set_callback(on_mqtt_data_received)
         
     return True
 
