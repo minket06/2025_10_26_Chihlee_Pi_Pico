@@ -16,9 +16,9 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # MQTT 設定
-MQTT_BROKER = "172.20.10.3"
+MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
-MQTT_TOPIC = "living_room/sensor"
+MQTT_TOPIC = "客廳/感測器"
 
 # 全域數據儲存
 sensor_data = []
