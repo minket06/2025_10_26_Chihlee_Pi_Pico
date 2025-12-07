@@ -17,6 +17,7 @@ import socket
 
 WIFI_SSID = "F602-10"
 WIFI_PASSWORD = "raspberry"
+
 # -------------------------------
 # WiFi 連線函式
 # -------------------------------
