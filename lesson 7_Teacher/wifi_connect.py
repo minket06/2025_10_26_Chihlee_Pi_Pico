@@ -9,8 +9,14 @@ import socket
 # -------------------------------
 # 你可以設定你的 WiFi 資訊
 # -------------------------------
-WIFI_SSID = "sams"
-WIFI_PASSWORD = "0939811558"
+#WIFI_SSID = "sams"
+#WIFI_PASSWORD = "0939811558"
+
+#WIFI_SSID = "F602-12-wifi"
+#WIFI_PASSWORD = "raspberry"
+
+WIFI_SSID = "F602-10"
+WIFI_PASSWORD = "raspberry"
 
 # -------------------------------
 # WiFi 連線函式
